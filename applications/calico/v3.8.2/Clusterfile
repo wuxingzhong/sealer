@@ -1,0 +1,64 @@
+apiVersion: sealer.aliyun.com/v1alpha1
+kind: Cluster
+metadata:
+  name: my-cluster
+spec:
+  image: kubernetes-withcalico:v1.19.9
+  provider: BAREMETAL
+
+---
+apiVersion: sealer.aliyun.com/v1alpha1
+kind: Config
+metadata:
+  name: calico
+spec:
+  path: etc/calico-config.yaml
+  data: |
+    kind: ConfigMap
+    apiVersion: v1
+    metadata:
+    name: calico-config
+    namespace: kube-system
+    data:
+    # Typha is disabled.
+    typha_service_name: "none"
+    # Configure the backend to use.
+    calico_backend: "bird"
+    # Configure the MTU to use
+    veth_mtu: "1440"
+    # Configer the ipv4 pool cidr 
+        calico_ipv4pool_cidr: "192.168.0.0/16"
+        # Configer the ip autodetect method 
+    ip_autodetection_method: "interface=eth.*|en.*"
+    # Configer the ipip
+    calico_ipv4pool_ipip: "Always"
+    # The CNI network configuration to install on each node.  The special
+    # values in this config will be automatically populated.
+    cni_network_config: |-
+        {
+        "name": "k8s-pod-network",
+        "cniVersion": "0.3.1",
+        "plugins": [
+            {
+            "type": "calico",
+            "log_level": "info",
+            "datastore_type": "kubernetes",
+            "nodename": "__KUBERNETES_NODE_NAME__",
+            "mtu": __CNI_MTU__,
+            "ipam": {
+                "type": "calico-ipam"
+            },
+            "policy": {
+                "type": "k8s"
+            },
+            "kubernetes": {
+                "kubeconfig": "__KUBECONFIG_FILEPATH__"
+            }
+            },
+            {
+            "type": "portmap",
+            "snat": true,
+            "capabilities": {"portMappings": true}
+            }
+        ]
+        }

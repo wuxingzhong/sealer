@@ -1,0 +1,4 @@
+FROM kubernetes:v1.19.9
+COPY calico-crd .
+CMD kubectl apply -f calico-crd
+CMD kubectl apply -f etc/calico-config.yaml
